@@ -2,14 +2,10 @@ import { z } from "zod";
 
 import { router, publicProcedure } from "../trpc";
 
-// In-memory DB (replace with real database later)
+// In-memory DB (replace with real database)
 let users = [
   { id: 1, taskName: "React", taskDesc: "This is react project" },
-  { id: 2, taskName: "React", taskDesc: "This is react project" },
-  { id: 3, taskName: "React", taskDesc: "This is react project" },
-  { id: 4, taskName: "React", taskDesc: "This is react project" },
-  { id: 5, taskName: "React", taskDesc: "This is react project" },
-  { id: 6, taskName: "React", taskDesc: "This is react project" },
+  { id: 2, taskName: "Node", taskDesc: "This is node project" },
 ];
 
 export const userRouter = router({
@@ -22,7 +18,7 @@ export const userRouter = router({
     }))
     .mutation(({ input }) => {
       const newUser = {
-        id: users.length + 1,
+        id: Date.now(),
         ...input,
       };
       users.push(newUser);
@@ -31,8 +27,23 @@ export const userRouter = router({
 
   // READ ALL
   list: publicProcedure
-    .query(() => {
-      return users;
+    .input(
+      z.object({
+        search: z.string().optional().default(""),
+      })
+    )
+    .query(({ input }) => {
+      const { search } = input;
+
+      if (!search) return users;
+
+      const lower = search.toLowerCase();
+
+      return users.filter(
+        (item) =>
+          item.taskName.toLowerCase().includes(lower) ||
+          item.taskDesc.toLowerCase().includes(lower)
+      );
     }),
 
   // READ SINGLE
@@ -46,8 +57,8 @@ export const userRouter = router({
   update: publicProcedure
     .input(z.object({
       id: z.number(),
-      name: z.string().optional(),
-      email: z.string().email().optional(),
+      taskName: z.string().optional(),
+      taskDesc: z.string().optional(),
     }))
     .mutation(({ input }) => {
       const index = users.findIndex(u => u.id === input.id);
